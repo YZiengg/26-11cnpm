@@ -1,0 +1,50 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+BeCode/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# production
+/build
+
+# misc
+BeCode/.DS_Store
+BeCode/.env
+BeCode/.env.local
+BeCode/.env.development.local
+BeCode/.env.test.local
+BeCode/.env.production.local
+
+BeCode/npm-debug.log*
+BeCode/yarn-debug.log*
+BeCode/yarn-error.log*
+
+
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+FeCode/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# production
+/build
+
+# misc
+FeCode/.DS_Store
+FeCode/.env
+FeCode/.env.local
+FeCode/.env.development.local
+FeCode/.env.test.local
+FeCode/.env.production.local
+
+FeCode/npm-debug.log*
+FeCode/yarn-debug.log*
+FeCode/yarn-error.log*
