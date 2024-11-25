@@ -64,3 +64,14 @@ export const deleteProduct = async (id, access_token) => {
     return error.response.data;
   }
 };
+
+
+export const getAlltypeProduct = async () => {
+  try {
+    const res = await axios.get(
+      `${process.env.REACT_APP_API_URL}/product/get-all-type/` )
+    return res.data;
+  } catch (error) {
+    return error.response.data;
+  }
+};

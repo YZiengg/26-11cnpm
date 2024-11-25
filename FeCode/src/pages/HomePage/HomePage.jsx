@@ -17,15 +17,19 @@ import Loading from "../../components/LoadingComponent/Loading";
 import { useDebounce } from "../../hooks/useDebounce";
 const HomePage = () => {
   const searchProduct = useSelector((state) => state.product?.search || ""); // Giá trị mặc định
-  const arr = ["Phòng khách", "Phòng bếp", "Phòng ngủ"];
   const [limit, setLimit] = useState(5);
+  const [typeProducts, setTypeProducts] = useState([]);
   const searchDebounce = useDebounce(searchProduct, 1000);
   const fetchProductAll = async ({ queryKey }) => {
-    console.log("context:", queryKey); // Log toàn bộ queryKey để kiểm tra
     const limit = queryKey && queryKey[1];
     const search = queryKey && queryKey[2];
     const res = await ProductService.getAllProduct(search, limit);
     return res;
+  };
+
+  const fetchAllTypeProduct = async () => {
+    const res = await ProductService.getAlltypeProduct();
+    setTypeProducts(res?.data);
   };
 
   const { isLoading, data: products } = useQuery({
@@ -35,11 +39,15 @@ const HomePage = () => {
     retryDelay: 1000,
     keepPreviousData: true,
   });
+
+  useEffect(() => {
+    fetchAllTypeProduct();
+  }, []);
   return (
     <Loading isLoading={isLoading}>
       <div style={{ width: "1250px", margin: "0 auto" }}>
         <WrapperTypeProduct>
-          {arr.map((item) => {
+          {typeProducts.map((item) => {
             return <TypeProduct name={item} key={item} />;
           })}
         </WrapperTypeProduct>

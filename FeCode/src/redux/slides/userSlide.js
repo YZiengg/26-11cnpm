@@ -8,7 +8,7 @@ const initialState = {
   avatar: '',
   access_token: '',
   id: '',
-  isAdmin: false
+  isAdmin: false,
 }
 
 export const userSlice = createSlice({
@@ -17,7 +17,7 @@ export const userSlice = createSlice({
   reducers: {
     // Reducer cập nhật thông tin người dùng
     updateUser: (state, action) => {
-      const { name = '', email = '', access_token = '', address = '', phone = '', avatar = '', _id = '', isAdmin } = action.payload;
+      const { name = '', email = '', access_token = '', address = '', phone = '', avatar = '', _id = '', isAdmin,  } = action.payload;
 
       state.name = name;
       state.email = email;
@@ -27,6 +27,8 @@ export const userSlice = createSlice({
       state.id = _id
       state.access_token = access_token;
       state.isAdmin = isAdmin;
+      
+
     },
 
     // Reducer reset thông tin người dùng
@@ -38,7 +40,8 @@ export const userSlice = createSlice({
       state.avatar = '';
       state.id = '';
       state.access_token = '';
-      state.access_token = false
+     
+
 
     },
   },

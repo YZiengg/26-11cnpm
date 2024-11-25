@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react";
 import { WrapperHeader, WrapperUploadFile } from "./style";
 import { PlusOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import TableComponent from "../TableComponent/TableComponent";
-import { Form, Button } from "antd";
+import { Form, Button, Select } from "antd";
 import InputComponent from "../InputComponent/InputComponent";
-import { getBase64 } from "../../untils";
+import { getBase64, renderOptions } from "../../untils";
 import { useMutationHooks } from "../../hooks/useMutationHook";
 import * as ProductService from "../../services/ProductService";
 import * as message from "../../components/Mesage/Message";
@@ -18,6 +18,7 @@ const AdminProduct = () => {
   const [rowSelected, setRowSelected] = useState("");
   const [isOpenDrawer, setIsopenDrawer] = useState(false);
   const [isModalOpenDelete, setisModalOpenDelete] = useState(false);
+  const [typeSelect, setTypeSelect] = useState("");
   const user = useSelector((state) => state?.user);
   const [stateProduct, setStateProduct] = useState({
     name: "",
@@ -27,6 +28,8 @@ const AdminProduct = () => {
     image: "",
     type: "",
     countInStock: "",
+    newType: "",
+    discount: "",
   });
   const [stateProductDetails, setStateProductDetails] = useState({
     name: "",
@@ -36,13 +39,31 @@ const AdminProduct = () => {
     image: "",
     type: "",
     countInStock: "",
+    discount: "",
   });
   const [form] = Form.useForm();
-  const mutation = useMutationHooks(async (data) => {
-    const res = await ProductService.createProduct(data); // Gọi API và chờ kết quả
-    return res; // Trả về kết quả từ server
+  const mutation = useMutationHooks((data) => {
+    const {
+      name,
+      price,
+      description,
+      rating,
+      image,
+      type,
+      countInStock,
+      discount,
+    } = data;
+    const res = ProductService.createProduct({
+      name,
+      price,
+      description,
+      rating,
+      image,
+      type,
+      countInStock,
+      discount,
+    });
   });
-  console.log("rowSelected", rowSelected);
   const mutationUpdate = useMutationHooks((data) => {
     const { id, token, ...rests } = data;
     const res = ProductService.updateProduct(id, token, { ...rests });
@@ -68,6 +89,7 @@ const AdminProduct = () => {
         image: res?.data?.image,
         type: res?.data?.type,
         countInStock: res?.data?.countInStock,
+        discount: res?.data?.discount,
       });
     }
   };
@@ -84,14 +106,15 @@ const AdminProduct = () => {
     }
   }, [rowSelected, isOpenDrawer]);
 
-  console.log("StateProduct", stateProductDetails);
-
   const handleDetailsProduct = () => {
     if (rowSelected) {
       // fetchGetDetailsProduct();
     }
-
     setIsopenDrawer(true);
+  };
+  const fetchAllTypeProduct = async () => {
+    const res = await ProductService.getAlltypeProduct();
+    return res;
   };
   const { data, isLoading, isSuccess, isError } = mutation;
   const {
@@ -106,10 +129,13 @@ const AdminProduct = () => {
     isSuccess: isSuccessDeleted,
     isError: isErrorDeleted,
   } = mutationDeleted;
-  console.log("dataUpdated", dataUpdateed);
   const queryProduct = useQuery({
     queryKey: ["products"],
     queryFn: getAllProducts,
+  });
+  const TypeProduct = useQuery({
+    queryKey: ["type-product"],
+    queryFn: fetchAllTypeProduct,
   });
   const { isLoading: isLoadingProduct, data: products } = queryProduct;
   const renderAction = () => {
@@ -214,6 +240,7 @@ const AdminProduct = () => {
       image: "",
       type: "",
       countInStock: "",
+      discount: "",
     });
     form.resetFields();
   };
@@ -233,7 +260,20 @@ const AdminProduct = () => {
   };
 
   const onFinish = () => {
-    mutation.mutate(stateProduct, {
+    const params = {
+      name: stateProduct.name,
+      price: stateProduct.price,
+      description: stateProduct.description,
+      rating: stateProduct.rating,
+      image: stateProduct.image,
+      type:
+        stateProduct.type === "add-type"
+          ? stateProduct.newType
+          : stateProduct.type,
+      countInStock: stateProduct.countInStock,
+      discount: stateProduct.discount,
+    };
+    mutation.mutate(params, {
       onSettled: () => {
         queryProduct.refetch();
       },
@@ -284,7 +324,9 @@ const AdminProduct = () => {
       }
     );
   };
-
+  const handleChangeSelect = (value) => {
+    setStateProduct({ ...stateProduct, type: value });
+  };
   return (
     <div>
       <WrapperHeader>Quản lý sản phẩm </WrapperHeader>
@@ -369,15 +411,33 @@ const AdminProduct = () => {
             label="Type"
             name="type"
             rules={[{ required: true, message: "Please input your type!" }]}
-            labelAlign="left" // Căn lề trái
+            labelAlign="left"
           >
-            <InputComponent
-              value={stateProduct.type}
-              onChange={handleOnchange}
+            <Select
               name="type"
+              // defaultValue="lucy"
+              // style={{
+              // width: 120,
+              // }}
+              value={stateProduct.type}
+              onChange={handleChangeSelect}
+              options={renderOptions(TypeProduct?.data?.data)}
             />
           </Form.Item>
-
+          {stateProduct.type === "add-type" && (
+            <Form.Item
+              label="New type"
+              name="new-type"
+              rules={[{ required: true, message: "Please input your type!" }]}
+              labelAlign="left"
+            >
+              <InputComponent
+                value={stateProduct.newType}
+                onChange={handleOnchange}
+                name="newType"
+              />
+            </Form.Item>
+          )}
           <Form.Item
             label="Count InStock"
             name="countInStock"
@@ -430,6 +490,19 @@ const AdminProduct = () => {
               name="rating"
             />
           </Form.Item>
+          <Form.Item
+            label="Discount"
+            name="discount"
+            rules={[{ required: true, message: "Please input discount !" }]}
+            labelAlign="left" // Căn lề trái
+          >
+            <InputComponent
+              value={stateProduct.discount}
+              onChange={handleOnchange}
+              name="discount"
+            />
+          </Form.Item>
+
           <Form.Item
             label="Image"
             name="image"
@@ -555,7 +628,18 @@ const AdminProduct = () => {
               name="rating"
             />
           </Form.Item>
-
+          <Form.Item
+            label="Discount"
+            name="discount"
+            rules={[{ required: true, message: "Please input the Discount" }]}
+            labelAlign="left" // Căn lề trái
+          >
+            <InputComponent
+              value={stateProductDetails.discount}
+              onChange={handleOnchangeDetails}
+              name="discount"
+            />
+          </Form.Item>
           <Form.Item
             label="Image"
             name="image"

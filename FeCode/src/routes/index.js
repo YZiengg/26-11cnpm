@@ -26,7 +26,7 @@ export const routes = [
         isShowHeader: true, // Thêm dấu phẩy ở đây
     },
     {
-        path: '/:type',
+        path: '/product/:type',
         page: TypeProductPage,
         isShowHeader: true, // Thêm dấu phẩy ở đây
     },

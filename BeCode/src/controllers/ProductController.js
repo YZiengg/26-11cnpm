@@ -3,10 +3,10 @@ const ProductService = require('../services/ProductService');
 
 const createProduct = async (req, res) => {
     try {
-        const { name, price, description, rating, image, type, countInStock } = req.body;
+        const { name, price, description, rating, image, type, countInStock,discount } = req.body;
         console.log('req.body', req.body)
 
-        if (!name || !price || !description || !rating || !image || !type || !countInStock) {
+        if (!name || !price || !description || !rating || !image || !type || !countInStock || !discount) {
             return res.status(400).json({
                 status: 'ERROR',
                 message: 'Tất cả các trường đều là bắt buộc'
@@ -84,7 +84,7 @@ const deleteProduct = async (req, res) => {
 const getAllProduct = async (req, res) => {
     try {
         const { limit, page, sort, filter } = req.query
-        const response = await ProductService.getAllProduct(Number(limit) || 8, Number(page) || 0, sort, filter);
+        const response = await ProductService.getAllProduct(Number(limit) || null, Number(page) || 0, sort, filter);
         return res.status(200).json(response);
     } catch (e) {
         return res.status(404).json({
@@ -93,11 +93,26 @@ const getAllProduct = async (req, res) => {
     }
 };
 
+const getAllType = async (req, res) => {
+    try {
+        const response = await ProductService.getAllType();
+        return res.status(200).json(response);
+    } catch (e) {
+        return res.status(404).json({
+            message: 'Đã xảy ra lỗi khi lấy các loại sản phẩm.',
+            error: e.message
+        });
+    }
+};
+
+
+
 module.exports = {
     createProduct,
     updateProduct,
     getDetailProduct,
     deleteProduct,
-    getAllProduct
+    getAllProduct,
+    getAllType
 
 };

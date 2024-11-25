@@ -23,3 +23,27 @@ export function getItem(label, key, icon, children, type) {
         type,
     };
 }
+
+
+export const renderOptions = (arr) => {
+    let results = [] 
+    if(arr){
+        results = arr?.map((opt)=> {
+            return {value: opt,
+                label: opt,
+            }
+        })  
+      }
+      results.push({label:'Thêm type',
+        value:'add-type'
+      })
+      return results
+}
+
+export const convertPrice=(price) => {
+    try{
+        const result=price?.toLocaleString().replaceAll(',', '.')
+        return `${result} VNĐ `
+    }
+    catch(error){return null}
+}

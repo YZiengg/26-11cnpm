@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { WrapperHeader, WrapperUploadFile } from "./style";
+import { WrapperHeader, WrapperUploadFile } from "./style"; // WrapperUploadFile đã được thêm vào đây
 import TableComponent from "../TableComponent/TableComponent";
-import { Form, Button } from "antd";
+import { Form, Button, Upload, Avatar } from "antd";
 import ModalComponent from "../ModalComponent/ModalComponent";
 import DrawerComponent from "../DrawerComponent/DrawerComponent";
 import { getBase64 } from "../../untils";
@@ -24,74 +24,58 @@ const AdminUser = () => {
     name: "",
     email: "",
     phone: "",
+    isAdmin: false,
+    avatar: "",
     address: "",
   });
-  const [stateProductDetails, setStateProductDetails] = useState({
-    name: "",
-    price: "",
-    description: "",
-    rating: "",
-    image: "",
-    type: "",
-    countInStock: "",
-  });
+
   const [form] = Form.useForm();
   const mutation = useMutationHooks(async (data) => {
     const res = await UserService.signupUser(data); // Gọi API và chờ kết quả
     return res; // Trả về kết quả từ server
   });
-  console.log("rowSelected", rowSelected);
+
   const mutationUpdate = useMutationHooks((data) => {
     const { id, token, ...rests } = data;
     const res = UserService.updateUser(id, token, { ...rests });
     return res;
   });
+
   const mutationDeleted = useMutationHooks((data) => {
     const { id, token } = data;
     const res = UserService.deleteUser(id, token);
     return res;
   });
+
   const getAllUsers = async () => {
     const res = await UserService.getAllUser();
     return res;
   };
-  const fetchGetDetailsProduct = async (rowSelected) => {
+
+  useEffect(() => {
+    if (rowSelected) {
+      fetchGetDetailsUser(rowSelected);
+    }
+  }, [rowSelected]);
+
+  const fetchGetDetailsUser = async (rowSelected) => {
     const res = await UserService.getDetailsUser(rowSelected);
     if (res?.data) {
-      setStateProductDetails({
+      setStateUser({
         name: res?.data?.name,
-        price: res?.data?.price,
-        description: res?.data?.description,
-        rating: res?.data?.rating,
-        image: res?.data?.image,
-        type: res?.data?.type,
-        countInStock: res?.data?.countInStock,
+        email: res?.data?.email,
+        phone: res?.data?.phone,
+        address: res?.data?.address,
       });
     }
   };
 
   useEffect(() => {
-    if (stateProductDetails) {
-      form.setFieldsValue(stateProductDetails); // Dùng setFieldsValue để cập nhật toàn bộ form
+    if (stateUser) {
+      form.setFieldsValue(stateUser); // Dùng setFieldsValue để cập nhật toàn bộ form
     }
-  }, [form, stateProductDetails]);
+  }, [form, stateUser]);
 
-  useEffect(() => {
-    if (rowSelected) {
-      fetchGetDetailsProduct(rowSelected);
-    }
-  }, [rowSelected]);
-
-  console.log("StateUser", stateProductDetails);
-
-  const handleDetailsProduct = () => {
-    if (rowSelected) {
-      // fetchGetDetailsProduct();
-    }
-
-    setIsopenDrawer(true);
-    console.log("rowSelected", rowSelected);
-  };
   const { data, isLoading, isSuccess, isError } = mutation;
   const {
     data: dataUpdateed,
@@ -105,12 +89,14 @@ const AdminUser = () => {
     isSuccess: isSuccessDeleted,
     isError: isErrorDeleted,
   } = mutationDeleted;
-  console.log("dataUpdated", dataUpdateed);
+
   const queryUser = useQuery({
     queryKey: ["users"],
     queryFn: getAllUsers,
   });
-  const { isLoading: isLoadingProduct, data: products } = queryUser;
+
+  const { isLoading: isLoadingUser, data: users } = queryUser;
+
   const renderAction = () => {
     return (
       <div>
@@ -120,10 +106,6 @@ const AdminUser = () => {
             setisModalOpenDelete(true);
           }}
         />
-        {/* <EditOutlined
-          style={{ color: "orange", fontSize: "20px", cursor: "pointer" }}
-          onClick={handleDetailsProduct}
-        /> */}
       </div>
     );
   };
@@ -140,7 +122,7 @@ const AdminUser = () => {
       dataIndex: "email",
     },
     {
-      title: "Adress",
+      title: "Address",
       dataIndex: "address",
     },
     {
@@ -155,9 +137,9 @@ const AdminUser = () => {
   ];
 
   const dataTable =
-    products?.data?.length &&
-    products?.data?.map((product) => {
-      return { ...product, key: product._id };
+    users?.data?.length &&
+    users?.data?.map((user) => {
+      return { ...user, key: user._id };
     });
 
   useEffect(() => {
@@ -191,7 +173,7 @@ const AdminUser = () => {
     setisModalOpenDelete(false);
   };
 
-  const handleDeleteProduct = () => {
+  const handleDeleteUser = () => {
     mutationDeleted.mutate(
       { id: rowSelected, token: user?.access_token },
       {
@@ -201,30 +183,25 @@ const AdminUser = () => {
       }
     );
   };
+
   const handleCancel = () => {
     setIsModalOpen(false); // Đóng modal
     setStateUser({
       name: "",
-      price: "",
-      description: "",
-      rating: "",
-      image: "",
-      type: "",
-      countInStock: "",
+      email: "",
+      phone: "",
+      address: "",
     });
     form.resetFields();
   };
 
   const handleCloseDrawer = () => {
     setIsopenDrawer(false); // Đóng modal
-    setStateProductDetails({
+    setStateUser({
       name: "",
-      price: "",
-      description: "",
-      rating: "",
-      image: "",
-      type: "",
-      countInStock: "",
+      email: "",
+      phone: "",
+      address: "",
     });
     form.resetFields();
   };
@@ -236,18 +213,14 @@ const AdminUser = () => {
       },
     });
   };
+
   const handleOnchange = (e) => {
     setStateUser({
       ...stateUser,
       [e.target.name]: e.target.value,
     });
   };
-  const handleOnchangeDetails = (e) => {
-    setStateProductDetails({
-      ...stateProductDetails,
-      [e.target.name]: e.target.value,
-    });
-  };
+
   const handleOnchangeAvatar = async ({ fileList }) => {
     if (!fileList || fileList.length === 0) return; // Kiểm tra fileList
     const file = fileList[0]; // Lấy file đầu tiên
@@ -259,21 +232,10 @@ const AdminUser = () => {
       image: file.preview,
     });
   };
-  const handleOnchangeAvatarDetails = async ({ fileList }) => {
-    if (!fileList || fileList.length === 0) return; // Kiểm tra fileList
-    const file = fileList[0]; // Lấy file đầu tiên
-    if (!file.url && !file.preview) {
-      file.preview = await getBase64(file.originFileObj);
-    }
-    setStateProductDetails({
-      ...stateProductDetails,
-      image: file.preview,
-    });
-  };
 
-  const onUpdateProduct = () => {
+  const onUpdateUser = () => {
     mutationUpdate.mutate(
-      { id: rowSelected, token: user?.access_token, ...stateProductDetails },
+      { id: rowSelected, token: user?.access_token, ...stateUser },
       {
         onSettled: () => {
           queryUser.refetch();
@@ -281,6 +243,7 @@ const AdminUser = () => {
       }
     );
   };
+
   return (
     <div>
       <WrapperHeader>Quản lý người dùng</WrapperHeader>
@@ -293,7 +256,7 @@ const AdminUser = () => {
       >
         <TableComponent
           columns={columns}
-          isLoading={isLoadingProduct}
+          isLoading={isLoadingUser}
           data={dataTable}
           onRow={(record) => {
             return {
@@ -304,13 +267,14 @@ const AdminUser = () => {
           }}
         />
       </div>
+
       <ModalComponent
-        title="Tạo sản phẩm "
+        title="Tạo người dùng "
         open={isModalOpen}
         onCancel={handleCancel}
         footer={[
           <Button key="cancel" onClick={handleCancel}>
-            Cancel
+            Hủy
           </Button>,
         ]}
       >
@@ -323,9 +287,9 @@ const AdminUser = () => {
           form={form}
         >
           <Form.Item
-            label="Name"
+            label="Tên"
             name="name"
-            rules={[{ required: true, message: "Please input your Name!" }]}
+            rules={[{ required: true, message: "Vui lòng nhập tên!" }]}
             labelAlign="left" // Căn lề trái
           >
             <InputComponent
@@ -335,237 +299,74 @@ const AdminUser = () => {
             />
           </Form.Item>
           <Form.Item
-            label="Type"
-            name="type"
-            rules={[{ required: true, message: "Please input your type!" }]}
-            labelAlign="left" // Căn lề trái
-          >
-            <InputComponent
-              value={stateUser.type}
-              onChange={handleOnchange}
-              name="type"
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="Count InStock"
-            name="countInStock"
-            rules={[
-              { required: true, message: "Please input your count InStock!" },
-            ]}
-            labelAlign="left" // Căn lề trái
-          >
-            <InputComponent
-              value={stateUser.countInStock}
-              onChange={handleOnchange}
-              name="countInStock"
-            />
-          </Form.Item>
-          <Form.Item
-            label="Price"
-            name="price"
-            rules={[{ required: true, message: "Please input your price!" }]}
-            labelAlign="left" // Căn lề trái
-          >
-            <InputComponent
-              value={stateUser.price}
-              onChange={handleOnchange}
-              name="price"
-            />
-          </Form.Item>
-          <Form.Item
-            label="Description"
-            name="description"
-            rules={[
-              { required: true, message: "Please input your description!" },
-            ]}
-            labelAlign="left" // Căn lề trái
-          >
-            <InputComponent
-              value={stateUser.description}
-              onChange={handleOnchange}
-              name="description"
-            />
-          </Form.Item>
-          <Form.Item
-            label="Rating"
-            name="rating"
-            rules={[{ required: true, message: "Please input your rating!" }]}
-            labelAlign="left" // Căn lề trái
-          >
-            <InputComponent
-              value={stateUser.rating}
-              onChange={handleOnchange}
-              name="rating"
-            />
-          </Form.Item>
-          <Form.Item
-            label="Image"
-            name="image"
-            rules={[{ required: true, message: "Please input your Image!" }]}
-            labelAlign="left" // Căn lề trái
-          >
-            <WrapperUploadFile onChange={handleOnchangeAvatar} maxCount={1}>
-              <Button>Select File</Button>
-              {stateUser?.image && (
-                <img
-                  src={stateUser?.image}
-                  style={{
-                    height: "60px",
-                    width: "60px",
-                    borderRadius: " 50%",
-                    objectFit: "cover",
-                    marginLeft: "10px",
-                  }}
-                  alt="avatar"
-                />
-              )}
-            </WrapperUploadFile>
-          </Form.Item>
-          <Form.Item wrapperCol={{ offset: 6, span: 40 }}>
-            <Button type="primary" htmlType="submit" style={{ width: "95px" }}>
-              Submit
-            </Button>
-          </Form.Item>
-        </Form>
-      </ModalComponent>
-      <DrawerComponent
-        title="Chi tiết sản phẩm"
-        isOpen={isOpenDrawer}
-        onClose={() => setIsopenDrawer(false)}
-        width="40%"
-      >
-        <Form
-          name="productForm"
-          labelCol={{ span: 5 }}
-          wrapperCol={{ span: 23 }}
-          onFinish={onUpdateProduct}
-          autoComplete="on"
-          form={form}
-        >
-          <Form.Item
-            label="Name"
-            name="name"
-            rules={[{ required: true, message: "Please input your Name!" }]}
+            label="Email"
+            name="email"
+            rules={[{ required: true, message: "Vui lòng nhập email!" }]}
             labelAlign="left"
           >
             <InputComponent
-              value={stateProductDetails.name}
-              onChange={handleOnchangeDetails}
-              name="name"
+              value={stateUser.email}
+              onChange={handleOnchange}
+              name="email"
             />
           </Form.Item>
 
           <Form.Item
-            label="Type"
-            name="type"
-            rules={[{ required: true, message: "Please input your type!" }]}
-            labelAlign="left"
-          >
-            <InputComponent
-              value={stateProductDetails.type}
-              onChange={handleOnchangeDetails}
-              name="type"
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="Count InStock"
-            name="countInStock"
+            label="Số điện thoại"
+            name="phone"
             rules={[
-              { required: true, message: "Please input your count InStock!" },
+              { required: true, message: "Vui lòng nhập số điện thoại!" },
             ]}
             labelAlign="left"
           >
             <InputComponent
-              value={stateProductDetails.countInStock}
-              onChange={handleOnchangeDetails}
-              name="countInStock"
+              value={stateUser.phone}
+              onChange={handleOnchange}
+              name="phone"
             />
           </Form.Item>
 
           <Form.Item
-            label="Price"
-            name="price"
-            rules={[{ required: true, message: "Please input your price!" }]}
+            label="Địa chỉ"
+            name="address"
+            rules={[{ required: true, message: "Vui lòng nhập địa chỉ!" }]}
             labelAlign="left"
           >
             <InputComponent
-              value={stateProductDetails.price}
-              onChange={handleOnchangeDetails}
-              name="price"
+              value={stateUser.address}
+              onChange={handleOnchange}
+              name="address"
             />
           </Form.Item>
 
-          <Form.Item
-            label="Description"
-            name="description"
-            rules={[
-              { required: true, message: "Please input your description!" },
-            ]}
-            labelAlign="left"
-          >
-            <InputComponent
-              value={stateProductDetails.description}
-              onChange={handleOnchangeDetails}
-              name="description"
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="Rating"
-            name="rating"
-            rules={[{ required: true, message: "Please input your rating!" }]}
-            labelAlign="left"
-          >
-            <InputComponent
-              value={stateProductDetails.rating}
-              onChange={handleOnchangeDetails}
-              name="rating"
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="Image"
-            name="image"
-            rules={[{ required: true, message: "Please input your Image!" }]}
-            labelAlign="left"
-          >
-            <WrapperUploadFile
-              onChange={handleOnchangeAvatarDetails}
-              maxCount={1}
+          {/* WrapperUploadFile */}
+          <WrapperUploadFile>
+            <Upload
+              customRequest={() => {}}
+              listType="picture-card"
+              onChange={handleOnchangeAvatar}
             >
-              <Button>Select File</Button>
-              {stateProductDetails?.image && (
+              {stateUser.image ? (
                 <img
-                  src={stateProductDetails?.image}
-                  style={{
-                    height: "60px",
-                    width: "60px",
-                    borderRadius: "50%",
-                    objectFit: "cover",
-                    marginLeft: "10px",
-                  }}
+                  src={stateUser.image}
                   alt="avatar"
+                  style={{ width: "100%" }}
                 />
+              ) : (
+                <div>
+                  <PlusOutlined />
+                  <div style={{ marginTop: 8 }}>Chọn ảnh</div>
+                </div>
               )}
-            </WrapperUploadFile>
-          </Form.Item>
+            </Upload>
+          </WrapperUploadFile>
 
-          <Form.Item wrapperCol={{ offset: 6, span: 40 }}>
-            <Button type="primary" htmlType="submit" style={{ width: "95px" }}>
-              Apply
+          <Form.Item wrapperCol={{ offset: 6, span: 18 }}>
+            <Button type="primary" htmlType="submit">
+              Lưu
             </Button>
           </Form.Item>
         </Form>
-      </DrawerComponent>
-      <ModalComponent
-        title="Xóa sản phẩm  "
-        open={isModalOpenDelete}
-        onCancel={handleCancelDelete}
-        onOk={handleDeleteProduct}
-      >
-        <div>Bạn có chắc xóa sản phẩm này không?</div>
       </ModalComponent>
     </div>
   );

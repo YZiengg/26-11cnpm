@@ -2,7 +2,7 @@ const Product=require ("../models/ProductModel")
 
 const createProduct = (newProduct) => {
     return new Promise(async (resolve, reject) => {
-        const { name, image, type, price, countInStock,rating,description } = newProduct;
+        const { name, image, type, price, countInStock,rating,description, discount } = newProduct;
         try {
             const checkProduct = await Product.findOne({
                 name:name
@@ -20,7 +20,8 @@ const createProduct = (newProduct) => {
                     price,
                     countInStock,
                     rating,
-                    description
+                    description,
+                    discount
             });
             if (newProduct) {
                 resolve({
@@ -92,6 +93,7 @@ const getAllProduct = (limit, page, sort, filter) => {
     return new Promise(async (resolve, reject) => {
         try {
             const totalProduct = await Product.countDocuments();
+            let allProduct=[]
 
             if (filter) {
                 const label = filter[0];
@@ -129,11 +131,17 @@ const getAllProduct = (limit, page, sort, filter) => {
                     pageCurrent,
                     totalPage: Math.ceil(totalProduct / limitValue),
                 });
-            } else {
-                const allProduct = await Product
+            } 
+            if(!limit){
+                allProduct = await Product
+                .find()
+            }
+            else {
+                 allProduct = await Product
                     .find()
                     .limit(limitValue)
                     .skip(Math.max(0, (pageCurrent - 1) * limitValue));  // Đảm bảo skip không âm
+            }
 
                 resolve({
                     status: 'ok',
@@ -142,15 +150,12 @@ const getAllProduct = (limit, page, sort, filter) => {
                     total: totalProduct,
                     pageCurrent,
                     totalPage: Math.ceil(totalProduct / limitValue),
-                });
-            }
+                })
         } catch (e) {
             reject(e);
         }
     });
 };
-
-
 
 
 
@@ -178,11 +183,31 @@ const getDetailProduct = (id) => {
     });
 };
 
+
+
+const getAllType = () => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const allType = await Product.distinct('type');
+            resolve({
+                status: 'ok',
+                message: 'success',
+                data: allType,
+            });
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
+
+
+
 module.exports = {
     createProduct,
     updateProduct,
     getDetailProduct,
     deleteProduct,
-    getAllProduct
+    getAllProduct,
+    getAllType
     
 };
