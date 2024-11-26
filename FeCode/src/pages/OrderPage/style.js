@@ -10,11 +10,11 @@ align-items: center;
 spam{
 color: rgb(36,36,36);
 font-weight:400;
-font-size: 13px}
+font-size: 13px};
 `
 
 export const WrapperLeft = styled.div`
-width:calc(70% - 12px)`
+width:calc(70% - 12px);`
 
 export const WrapperListOrder=styled.div`
 `
@@ -29,7 +29,7 @@ export const WrapperPriceDiscount=styled.span`
 color:#999;
 font-size:12px;
 text-decoration:line-through;
-margin-left: 4px
+margin-left: 4px;
 `
 export const WrapperCounterOrder=styled.div`
 display:flex;
@@ -37,7 +37,7 @@ justify-content: center;
 align-items: center;
 width: 25%;
 border: 1px solid #ccc;
-border-radius: 4px`
+border-radius: 4px;`
 
 export const WrapperRight=styled.div`
 width: calc(30% - 12px);
@@ -45,7 +45,7 @@ margin-left: 20px;
 display:flex;
 flex-direction: column;
 gap: 10px;
-background-color: #fff
+background-color: #fff;
 `
 
 export const WrapperInfo = styled.div`
@@ -63,5 +63,5 @@ justify-content: space-between;
 padding: 17px 20px;
 background: #fff;
 border-bottom-right-radius:6px;
-border-bottom-left-radius:6px
+border-bottom-left-radius:6px;
 `

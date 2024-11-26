@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Button, Checkbox, Form } from "antd";
+import { Radio, Checkbox, Form } from "antd";
 import {
   WrapperInfo,
   WrapperItemOrder,
@@ -8,6 +8,8 @@ import {
   WrapperListOrder,
   WrapperTotal,
   WrapperRight,
+  Label,
+  WrapperRadio,
 } from "./style";
 import { PlusOutlined, MinusOutlined, DeleteOutlined } from "@ant-design/icons";
 import ButtonComponent from "../../components/ButtonComponent/ButtonComponent";
@@ -18,15 +20,20 @@ import {
   increaseAmount,
   removeOrderProduct,
   selectedOrder,
+  removeAllOrderProduct,
+  markAsPaid,
+  removePaidProducts,
 } from "../../redux/slides/orderSlide";
 import { convertPrice } from "../../untils";
 import ModalComponent from "../../components/ModalComponent/ModalComponent";
 import InputComponent from "../../components/InputComponent/InputComponent";
 import { useMutationHooks } from "../../hooks/useMutationHook";
 import * as UserService from "../../services/UserService";
+import * as OrderService from "../../services/OrderService";
 import * as message from "../../components/Mesage/Message";
+import { useNavigate } from "react-router-dom";
 
-const OrderPage = () => {
+const PaymentPage = () => {
   const order = useSelector((state) => state.order);
   const user = useSelector((state) => state.user);
   const [isOpenModalUpdateInfo, setIsOpenModalUpdateInfo] = useState(false);
@@ -37,41 +44,11 @@ const OrderPage = () => {
     phone: "",
     address: "",
   });
+  const [delivery, setDelivery] = useState(""); // Mặc định là một chuỗi rỗng hoặc giá trị khởi tạo khác
+  const [payment, setPayment] = useState(""); // Mặc định là một chuỗi rỗng hoặc giá trị khởi tạo khác
+
+  const navigate = useNavigate();
   const [form] = Form.useForm();
-  const onChange = (e) => {
-    if (listChecked.includes(e.target.value)) {
-      const newListChecked = listChecked.filter(
-        (order) => order !== e.target.value
-      );
-      SetListChecked(newListChecked);
-    } else {
-      SetListChecked([...listChecked, e.target.value]);
-    }
-  };
-
-  const handleChangeCount = (type, productId) => {
-    if (type === "increase") {
-      dispatch(increaseAmount({ idProduct: productId }));
-    } else {
-      dispatch(decreaseAmount({ idProduct: productId }));
-    }
-  };
-
-  const handleOnchangeCheckAll = (e) => {
-    if (e.target.checked) {
-      const newListChecked = [];
-      order?.orderItems?.forEach((item) => {
-        newListChecked.push(item?.product);
-      });
-      SetListChecked(newListChecked);
-    } else {
-      SetListChecked([]);
-    }
-  };
-
-  useEffect(() => {
-    dispatch(selectedOrder({ listChecked }));
-  }, [listChecked]);
 
   useEffect(() => {
     form.setFieldsValue(stateUser);
@@ -90,10 +67,6 @@ const OrderPage = () => {
 
   const handleChangeAddress = () => {
     setIsOpenModalUpdateInfo(true);
-  };
-
-  const handleRemoveProduct = (productId) => {
-    dispatch(removeOrderProduct({ idProduct: productId }));
   };
 
   const priceMemo = useMemo(() => {
@@ -127,21 +100,60 @@ const OrderPage = () => {
       (Number(shippingPriceMemo) || 0)
     );
   }, [priceMemo, priceDiscountMemo, shippingPriceMemo]);
-  const handleAddCard = () => {
-    if (!order?.orderItemsSelected?.length) {
-      message.error("Vui lòng chọn sản phẩm");
-    } else if (!user.phone || !user.address || !user.name) {
-      setIsOpenModalUpdateInfo(true);
-    } else {
-      console.log("Thông tin người dùng:", user);
-      console.log("Sản phẩm trong giỏ hàng:", order?.orderItemsSelected);
-      console.log("add giỏ hàng");
+  const handleAddOrder = () => {
+    if (
+      user?.access_token &&
+      order?.orderItemsSelected &&
+      user?.name &&
+      user?.address &&
+      user?.phone &&
+      priceMemo &&
+      user?.id
+    ) {
+      mutationAddOrder.mutate(
+        {
+          token: user?.access_token,
+          orderItems: order?.orderItemsSelected,
+          fullName: user?.name,
+          address: user?.address,
+          phone: user?.phone,
+          itemsPrice: priceMemo,
+          shippingPrice: shippingPriceMemo,
+          totalPrice: totalPriceMemo,
+          user: user?.id,
+          paymethMethod: payment,
+        },
+        {
+          onSuccess: () => {
+            message.success("Đặt hàng thành công");
+
+            // Dispatch action xóa giỏ hàng sau khi thanh toán thành công
+            dispatch(removeAllOrderProduct()); // Xóa tất cả sản phẩm trong giỏ hàng
+
+            navigate("/orderSuccess", {
+              state: {
+                delivery,
+                payment,
+                orders: order?.orderItemsSelected,
+                totalPriceMemo: totalPriceMemo,
+              },
+            });
+          },
+        }
+      );
     }
   };
+
+  console.log("state", order);
 
   const mutationUpdate = useMutationHooks((data) => {
     const { id, token, ...rests } = data;
     const res = UserService.updateUser(id, token, { ...rests });
+    return res;
+  });
+  const mutationAddOrder = useMutationHooks((data) => {
+    const { token, ...rests } = data;
+    const res = OrderService.createOrder(token, { ...rests });
     return res;
   });
   const handleCancelUpdate = () => {
@@ -181,12 +193,18 @@ const OrderPage = () => {
       [e.target.name]: e.target.value,
     });
   };
-  console.log("stateUser", stateUser);
+  const handleDelivery = (e) => {
+    setDelivery(e.target.value); // Fixed the assignment
+  };
+
+  const handlePayment = (e) => {
+    setPayment(e.target.value);
+  };
 
   return (
     <div style={{ background: "#f5f5f5", width: "100%", minHeight: "100vh" }}>
       <div style={{ width: "1250px", margin: "0 auto", paddingTop: "30px" }}>
-        <h3>Giỏ hàng</h3>
+        <h3 style={{ padding: "1px 36px" }}>Chọn phương thức thanh toán</h3>
         <div
           style={{
             display: "flex",
@@ -196,182 +214,33 @@ const OrderPage = () => {
           }}
         >
           <WrapperLeft>
-            <WrapperStyleHeader>
-              <span style={{ display: "inline-block", width: "390px" }}>
-                <Checkbox
-                  onChange={handleOnchangeCheckAll}
-                  checked={listChecked?.length === order?.orderItems.length}
-                ></Checkbox>
-                <span style={{ marginLeft: "30px" }}>
-                  Tất cả ({order?.orderItems?.length} sản phẩm)
-                </span>
-              </span>
-              <div
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <span
-                  style={{
-                    width: "33%",
-                    textAlign: "center",
-                    paddingRight: "30px",
-                  }}
-                >
-                  Đơn giá
-                </span>
-                <span
-                  style={{
-                    width: "33%",
-                    textAlign: "center",
-                    paddingRight: "30px",
-                  }}
-                >
-                  Số lượng
-                </span>
-                <span
-                  style={{
-                    width: "33%",
-                    textAlign: "center",
-                    paddingRight: "30px",
-                  }}
-                >
-                  Thành tiền
-                </span>
+            <WrapperInfo>
+              <div>
+                <Label>Phương thức giao hàng</Label>
+                <WrapperRadio onChange={handleDelivery} value={delivery}>
+                  <Radio value="fast">
+                    <span style={{ color: "#ea8500", fontWeight: "bold" }}>
+                      FAST
+                    </span>{" "}
+                    Giao hàng tiết kiệm
+                  </Radio>
+                  <Radio value="gojeck">
+                    <span style={{ color: "#ea8500", fontWeight: "bold" }}>
+                      GOJECK
+                    </span>{" "}
+                    Giao hàng tiết kiệm
+                  </Radio>
+                </WrapperRadio>
               </div>
-            </WrapperStyleHeader>
-            <WrapperListOrder>
-              {order?.orderItems?.map((item) => {
-                return (
-                  <WrapperItemOrder key={item.product}>
-                    <div
-                      style={{
-                        width: "390px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "30px",
-                      }}
-                    >
-                      <Checkbox
-                        onChange={onChange}
-                        value={item?.product}
-                        checked={listChecked.includes(item?.product)}
-                      ></Checkbox>
-                      <img
-                        src={item?.image}
-                        style={{
-                          width: "77px",
-                          height: "79px",
-                          objectFit: "cover",
-                        }}
-                      />
-                      <div
-                        style={{
-                          width: 260,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {item.name}
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        width: "100%",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: "33%",
-                          textAlign: "center",
-                          fontSize: "14px",
-                          color: "#242424",
-                        }}
-                      >
-                        {convertPrice(item?.price)}
-                      </div>
-
-                      <div
-                        style={{
-                          width: "33%",
-                          display: "flex",
-                          justifyContent: "center",
-                          alignItems: "center",
-                        }}
-                      >
-                        <button
-                          style={{
-                            border: "none",
-                            background: "transparent",
-                            cursor: "pointer",
-                          }}
-                          onClick={() =>
-                            handleChangeCount("decrease", item.product)
-                          }
-                        >
-                          <MinusOutlined />
-                        </button>
-                        <WrapperInputNumber
-                          defaultValue={item.amount}
-                          value={item.amount}
-                          size="small"
-                          readOnly
-                          style={{
-                            width: "40px",
-                            textAlign: "center",
-                            border: "1px solid #dcdcdc",
-                            borderRadius: "4px",
-                          }}
-                        />
-                        <button
-                          style={{
-                            border: "none",
-                            background: "transparent",
-                            cursor: "pointer",
-                          }}
-                          onClick={() =>
-                            handleChangeCount("increase", item.product)
-                          }
-                        >
-                          <PlusOutlined />
-                        </button>
-                      </div>
-
-                      <div
-                        style={{
-                          width: "33%",
-                          textAlign: "center",
-                          fontSize: "14px",
-                          color: "red",
-                        }}
-                      >
-                        {convertPrice(item?.price * item?.amount)}
-                      </div>
-
-                      <div
-                        style={{
-                          width: "10%",
-                          display: "flex",
-                          justifyContent: "flex-end",
-                        }}
-                      >
-                        <DeleteOutlined
-                          style={{ cursor: "pointer" }}
-                          onClick={() => handleRemoveProduct(item?.product)}
-                        />
-                      </div>
-                    </div>
-                  </WrapperItemOrder>
-                );
-              })}
-            </WrapperListOrder>
+            </WrapperInfo>
+            <WrapperInfo>
+              <div>
+                <Label>Chọn phương thức thanh toán</Label>
+                <WrapperRadio onChange={handlePayment} value={payment}>
+                  <Radio value="later_money"> Thanh toán khi nhận hàng</Radio>
+                </WrapperRadio>
+              </div>
+            </WrapperInfo>
           </WrapperLeft>
           <WrapperRight>
             <WrapperInfo>
@@ -434,7 +303,7 @@ const OrderPage = () => {
               </div>
             </WrapperTotal>
             <ButtonComponent
-              onClick={() => handleAddCard()}
+              onClick={() => handleAddOrder()}
               size={40}
               styleButton={{
                 background: "rgb(255, 57,69)",
@@ -445,7 +314,7 @@ const OrderPage = () => {
                 fontSize: "16px",
                 color: "#fff",
               }}
-              textButton="MUA HÀNG"
+              textButton="ĐẶT HÀNG"
             ></ButtonComponent>
           </WrapperRight>
         </div>
@@ -510,4 +379,4 @@ const OrderPage = () => {
   );
 };
 
-export default OrderPage;
+export default PaymentPage;

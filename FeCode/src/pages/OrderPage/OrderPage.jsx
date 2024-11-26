@@ -25,6 +25,7 @@ import InputComponent from "../../components/InputComponent/InputComponent";
 import { useMutationHooks } from "../../hooks/useMutationHook";
 import * as UserService from "../../services/UserService";
 import * as message from "../../components/Mesage/Message";
+import { useNavigate } from "react-router-dom";
 
 const OrderPage = () => {
   const order = useSelector((state) => state.order);
@@ -133,9 +134,7 @@ const OrderPage = () => {
     } else if (!user.phone || !user.address || !user.name) {
       setIsOpenModalUpdateInfo(true);
     } else {
-      console.log("Thông tin người dùng:", user);
-      console.log("Sản phẩm trong giỏ hàng:", order?.orderItemsSelected);
-      console.log("add giỏ hàng");
+      navigate("/payment");
     }
   };
 
@@ -144,6 +143,7 @@ const OrderPage = () => {
     const res = UserService.updateUser(id, token, { ...rests });
     return res;
   });
+  const navigate = useNavigate();
   const handleCancelUpdate = () => {
     setStateUser({
       name: "",
@@ -186,7 +186,7 @@ const OrderPage = () => {
   return (
     <div style={{ background: "#f5f5f5", width: "100%", minHeight: "100vh" }}>
       <div style={{ width: "1250px", margin: "0 auto", paddingTop: "30px" }}>
-        <h3>Giỏ hàng</h3>
+        <h3 style={{ padding: "1px 36px" }}>Giỏ hàng</h3>
         <div
           style={{
             display: "flex",

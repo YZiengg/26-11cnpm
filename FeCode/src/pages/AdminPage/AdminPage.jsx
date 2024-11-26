@@ -3,17 +3,19 @@ import { Menu } from "antd";
 import {
   UserOutlined,
   ProductOutlined,
-  HarmonyOSOutlined,
+  ShoppingCartOutlined,
 } from "@ant-design/icons"; // Icons
 import { getItem } from "../../untils"; // Đường dẫn tới file utils
 import HeaderComponent from "../../components/HeaderComponent/HeaderComponent";
 import AdminUser from "../../components/AdminUser/AdminUser";
 import AdminProduct from "../../components/AdminProduct/AdminProduct";
+import OrderAdmin from "../../components/OrderAdmin/OrderAdmin";
 
 const AdminPage = () => {
   const items = [
     getItem("Người dùng", "user", <UserOutlined />),
     getItem("Sản phẩm ", "product", <ProductOutlined />),
+    getItem("Đơn hàng ", "order", <ShoppingCartOutlined />),
   ];
 
   const [keySelected, setKeySelected] = useState("");
@@ -23,6 +25,8 @@ const AdminPage = () => {
         return <AdminUser />; // Trả về trang AdminUser khi chọn 'user'
       case "product":
         return <AdminProduct />; // Trả về trang AdminProduct khi chọn 'product'
+      case "order":
+        return <OrderAdmin />; // Trả về trang AdminProduct khi chọn 'product'
       default:
         return <></>; // Trả về một fragment rỗng nếu không khớp với bất kỳ case nào
     }
